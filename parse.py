@@ -3,6 +3,11 @@ import os
 import re
 import xml.etree.ElementTree as ET
 
+def regexVarMatch(string):
+    return re.match(r"^(GF|LF|TF)@[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*$", string)
+
+def regexSymMatch(string):
+    return re.match(r"^(bool|nil|int|string)@.*$", string)
 
 #Arg parser
 args = sys.argv[1:]
@@ -30,6 +35,7 @@ if (sys.stdin.readline().strip() != ".IPPcode24"):
     print("Chybná hlavička")
     sys.exit(21)
 
+orderInt = 1
 
 for line in sys.stdin:
     #Ignorace prázdných řádků
@@ -45,57 +51,54 @@ for line in sys.stdin:
     words = line.split()
 
     #https://youtu.be/iuZIeMIlCCM?si=H7W2MCPnHikY0JpT&t=932
-    match words[0].upper():
-        case "MOVE":
-            print("MOVE")
+    opcode = words[0].upper()
+    match opcode:
+        case "MOVE" | "INT2CHAR" | "STRLEN" | "TYPE":
+            if (len(words) != 3):
+                print("Chybný počet argumentů")
+                sys.exit(23)
 
-        case "CREATEFRAME":
-            print("CREATEFRAME")
+            if (not regexVarMatch(words[1])):
+                print("Chybný formát argumentu")
+                sys.exit(23)
 
-        case "PUSHFRAME":
-            print("PUSHFRAME")
+            if (not regexVarMatch(words[2])):
+                print("Chybný formát argumentu")
+                sys.exit(23)
 
-        case "POPFRAME":
-            print("POPFRAME")
+            el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
+            content = ET.SubElement(el, "arg1", type="var")
+            content.text = words[1]
+            content = ET.SubElement(el, "arg2", type="var")
+            content.text = words[2]
 
-        case "DEFVAR":
+        case "CREATEFRAME" | "PUSHFRAME" | "POPFRAME" | "RETURN" | "BREAK":
+            if (len(words) != 1):
+                print("Chybný počet argumentů")
+                sys.exit(23)
+            el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
+
+
+        case "DEFVAR" | "POPS":
             if (len(words) != 2):
                 print("Chybný počet argumentů")
                 sys.exit(23)
-        
-            el = ET.SubElement(root, "instruction", opcode="DEFVAR")
-            el.set("var", words[1])
-            el.set("order", "1")
 
-        case "CALL":
-            print("CALL")
+            if (not regexVarMatch(words[1])):
+                print("Chybný formát argumentu")
+                sys.exit(23)
 
-        case "RETURN":
-            print("RETURN")
-
-        case "PUSHS":
-            print("PUSHS")
-
-        case "POPS":
-            print("POPS")
-
-        case "ADD":
-            print("ADD")
-
-        case "SUB":
-            print("SUB")
-
-        case "MUL":
-            print("MUL")
-
-        case "IDIV":
-            print("IDIV")
+            el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
+            content = ET.SubElement(el, "arg1", type="var")
+            content.text = words[1]
 
         case _:
             print("Neznámý opcode")
             sys.exit(22)
+    
+    orderInt = orderInt + 1
 
         
-
-# Uložení stromu do souboru s definovaným kódováním
+ET.indent(tree, space="    ")
 tree.write("output.xml", encoding="UTF-8", xml_declaration=True)
+
