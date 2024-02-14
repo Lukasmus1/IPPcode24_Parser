@@ -1,2 +1,2 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<program />
+<program language="IPPcode24"><instruction opcode="DEFVAR" var="GF@a" order="1" /></program language="IPPcode24">

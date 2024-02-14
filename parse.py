@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 import xml.etree.ElementTree as ET
 
 
@@ -18,13 +19,10 @@ elif (len(args) > 1):
 
 
 # Vytvoření kořenového elementu
-root = ET.Element("program")
+root = ET.Element("program language=\"IPPcode24\"")
 
 # Vytvoření stromu z kořenového elementu
 tree = ET.ElementTree(root)
-
-# Uložení stromu do souboru s definovaným kódováním
-tree.write("output.xml", encoding="UTF-8", xml_declaration=True)
 
 
 #Kontrola hlavičky
@@ -50,29 +48,54 @@ for line in sys.stdin:
     match words[0].upper():
         case "MOVE":
             print("MOVE")
+
         case "CREATEFRAME":
             print("CREATEFRAME")
+
         case "PUSHFRAME":
             print("PUSHFRAME")
+
         case "POPFRAME":
             print("POPFRAME")
+
         case "DEFVAR":
-            print("DEFVAR")
+            if (len(words) != 2):
+                print("Chybný počet argumentů")
+                sys.exit(23)
+        
+            el = ET.SubElement(root, "instruction", opcode="DEFVAR")
+            el.set("var", words[1])
+            el.set("order", "1")
+
         case "CALL":
             print("CALL")
+
         case "RETURN":
             print("RETURN")
+
         case "PUSHS":
             print("PUSHS")
+
         case "POPS":
             print("POPS")
+
         case "ADD":
             print("ADD")
+
         case "SUB":
             print("SUB")
+
         case "MUL":
             print("MUL")
+
         case "IDIV":
             print("IDIV")
+
+        case _:
+            print("Neznámý opcode")
+            sys.exit(22)
+
         
-    
+
+# Uložení stromu do souboru s definovaným kódováním
+tree.write("output.xml", encoding="UTF-8", xml_declaration=True)
