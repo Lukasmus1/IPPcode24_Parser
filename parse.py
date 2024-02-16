@@ -93,6 +93,11 @@ for line in sys.stdin:
     if (line == os.linesep or len(line.strip()) == 0):
         continue
 
+    #Kontrola Více hlaviček
+    if(line[0] == "."):
+        print("Více než jedna hlavička")
+        sys.exit(23)
+
     #Rozdělení řádku na slova
     words = line.split()
 
