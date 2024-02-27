@@ -3,6 +3,7 @@ import os
 import re
 import xml.etree.ElementTree as ET
 
+#Funkce pro kontrolu proměnné
 def regexVarMatch(string):
     if (string.count("@") < 1):
         print("Chybný formát argumentu")
@@ -12,17 +13,17 @@ def regexVarMatch(string):
     var = var and regexLabelMatch(words[1])
     return var
       
-
+#Funkce pro kontrolu symbolu
 def regexSymMatch(string):
     if (string.count("@") < 1):
-        print("Chybný formát argumentu")
+        print("")
         sys.exit(23)
     arg = string.split("@", 1)
 
     match arg[0]:
         case "int":
             res = re.match(r"^[-+]?[0-9]+$", arg[1]) is not None
-            res = res or (re.match(r"^-(0x)?[0-9a-fA-F]+$|^(0x)?[0-9a-fA-F]+$", arg[1]) is not None)
+            res = res or (re.match(r"^-(0(x|X))?[0-9a-fA-F]+$|^(0(x|X))?[0-9a-fA-F]+$", arg[1]) is not None)
             res = res or (re.match(r"^-(0o)?[0-7]+$|^(0o)?[0-7]+$", arg[1]) is not None)
             res = res or (re.match(r"^(0b)?[01]+$", arg[1]) is not None)
             return res
@@ -35,15 +36,20 @@ def regexSymMatch(string):
         case _:
             return False
 
+#Funkce pro kontrolu názvu proměnné/labelu
 def regexLabelMatch(string):
     return re.match(r"^[a-zA-Z_\-$&%*!?][a-zA-Z0-9_\-$&%*!?]*$", string)
 
-#Arg parser
+
+#============= PROGRAM ZAČÍNÁ ZDE =============
+
+#Parsování argumentu
 args = sys.argv[1:]
 
 if (len(args) == 1):
     if (args[0] == "--help"):
-        print("ahojky")
+        print("Skript typu filtr (parse.py v jazyce Python 3.10) načte ze standardního vstupu zdrojový kód v IPPcode24, zkontroluje lexikální a syntaktickou správnost kódu a vypíše na standardní výstup XML reprezentaci programu.")
+        print("POUŽITÍ: python3 parse.py < input > output")
         sys.exit(0)
     else:
         sys.exit(10)
@@ -81,6 +87,8 @@ if (not helper):
     print("Chybí hlavička")
     sys.exit(21)
 
+
+#Zpracování řádků
 orderInt = 1
 
 for line in sys.stdin:
@@ -101,30 +109,26 @@ for line in sys.stdin:
     #Rozdělení řádku na slova
     words = line.split()
 
-    #https://youtu.be/iuZIeMIlCCM?si=H7W2MCPnHikY0JpT&t=932
+    #Zpracování instrukcí
     opcode = words[0].upper()
+    #U každé instrukce se nejprve zkontroluje počet argumentů a jejich formát a následně se vytvoří XML
     match opcode:
         case "MOVE" | "INT2CHAR" | "STRLEN" | "TYPE":
             if (len(words) != 3):
                 print("Chybný počet argumentů")
                 sys.exit(23)
-
             res = regexVarMatch(words[1])
-
             if (not res):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             res = regexVarMatch(words[2])
             isVar = regexSymMatch(words[2])
             if (not (res or isVar)):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
             content = ET.SubElement(el, "arg1", type="var")
             content.text = words[1]
-
             if (not isVar):
                 content = ET.SubElement(el, "arg2", type="var")
                 content.text = words[2]
@@ -144,13 +148,10 @@ for line in sys.stdin:
             if (len(words) != 2):
                 print("Chybný počet argumentů")
                 sys.exit(23)
-
             res = regexVarMatch(words[1])
-
             if (not res):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-            
             el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
             content = ET.SubElement(el, "arg1", type="var")
             content.text = words[1]
@@ -158,12 +159,10 @@ for line in sys.stdin:
         case "CALL" | "LABEL" | "JUMP":
             if (len(words) != 2):
                 print("Chybný počet argumentů")
-                sys.exit(23)
-            
+                sys.exit(23)           
             if (not regexLabelMatch(words[1])):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
             content = ET.SubElement(el, "arg1", type="label")
             content.text = words[1]
@@ -172,28 +171,23 @@ for line in sys.stdin:
             if (len(words) != 4):
                 print("Chybný počet argumentů")
                 sys.exit(23)
-
             res = regexVarMatch(words[1])
             if (not res):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             res = regexVarMatch(words[2])
             isVar = regexSymMatch(words[2])
             if (not (res or isVar)):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             res2 = regexVarMatch(words[3])
             isVar2 = regexSymMatch(words[3])
             if (not (res2 or isVar2)):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
             content = ET.SubElement(el, "arg1", type="var")
             content.text = words[1]
-
             if (not isVar):    
                 content = ET.SubElement(el, "arg2", type="var")
                 content.text = words[2]
@@ -201,7 +195,6 @@ for line in sys.stdin:
                 wordsSplit = words[2].split("@", 1)
                 content = ET.SubElement(el, "arg2", type=wordsSplit[0])
                 content.text = wordsSplit[1]
-
             if (not isVar2):    
                 content = ET.SubElement(el, "arg3", type="var")
                 content.text = words[3]
@@ -214,22 +207,18 @@ for line in sys.stdin:
             if (len(words) != 3):
                 print("Chybný počet argumentů")
                 sys.exit(23)
-
             res = regexVarMatch(words[1])
             if (not res):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             res = regexVarMatch(words[2])
             isVar = regexSymMatch(words[2])
             if (not (res or isVar)):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
             content = ET.SubElement(el, "arg1", type="var")
             content.text = words[1]
-
             if (not isVar):    
                 content = ET.SubElement(el, "arg2", type="var")
                 content.text = words[2]
@@ -238,21 +227,17 @@ for line in sys.stdin:
                 content = ET.SubElement(el, "arg2", type=wordsSplit[0])
                 content.text = wordsSplit[1]
 
-
         case "READ":
             if (len(words) != 3):
                 print("Chybný počet argumentů")
                 sys.exit(23)
-            
             res = regexVarMatch(words[1])
             if (not res):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-            
             if not re.match(r"(int|string|bool)$", words[2]):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-
             el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
             content = ET.SubElement(el, "arg1", type="var")
             content.text = words[1]
@@ -263,27 +248,22 @@ for line in sys.stdin:
             if (len(words) != 4):
                 print("Chybný počet argumentů")
                 sys.exit(23)
-            
             if (not regexLabelMatch(words[1])):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-            
             res = regexVarMatch(words[2])
             isVar = regexSymMatch(words[2])
             if (not (res or isVar)):
                 print("Chybný formát argumentu")
                 sys.exit(23)
-            
             res2 = regexVarMatch(words[3])
             isVar2 = regexSymMatch(words[3])
             if (not (res2 or isVar2)):
                 print("Chybný formát argumentu")
-                sys.exit(23)
-            
+                sys.exit(23) 
             el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
             content = ET.SubElement(el, "arg1", type="label")
             content.text = words[1]
-
             if (not isVar):
                 content = ET.SubElement(el, "arg2", type="var")
                 content.text = words[2]
@@ -291,7 +271,6 @@ for line in sys.stdin:
                 wordsSplit = words[2].split("@", 1)
                 content = ET.SubElement(el, "arg2", type=wordsSplit[0])
                 content.text = wordsSplit[1]
-
             if (not isVar2):
                 content = ET.SubElement(el, "arg3", type="var")
                 content.text = words[3]
@@ -304,14 +283,11 @@ for line in sys.stdin:
             if (len(words) != 2):
                 print("Chybný počet argumentů")
                 sys.exit(23)
-
             res = regexVarMatch(words[1])
-            isVar = regexSymMatch(words[1])
-            
+            isVar = regexSymMatch(words[1])      
             if (not (res or isVar)):
                 print("Chybný formát argumentu")
-                sys.exit(23)
-            
+                sys.exit(23)  
             el = ET.SubElement(root, "instruction", order=str(orderInt), opcode=opcode)
             if (not isVar):
                 content = ET.SubElement(el, "arg1", type="var")
@@ -321,17 +297,19 @@ for line in sys.stdin:
                 content = ET.SubElement(el, "arg1", type=wordsSplit[0])
                 content.text = wordsSplit[1]
 
-
         case _:
             print("Neznámý opcode")
             sys.exit(22)
     
     orderInt = orderInt + 1
 
-        
+#Upraení XML podle zadání        
 ET.indent(tree, space="    ")
 
+#Enkódování XML do stringu utf-8 
 xml_string = ET.tostring(root, encoding='utf-8', method="xml")
+
+#Dekódování utf-8 do stringu
 xml_string = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_string.decode('utf-8')
 
 print(xml_string)
