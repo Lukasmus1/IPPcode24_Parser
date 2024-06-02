@@ -1,5 +1,7 @@
 # IPPcode24 Parser
 
+## VUT FIT IPP Projekt 
+
 Skript začíná kontrolou argumentu --help pomocí knihovny sys. Alternativní způsob zpracování argumentů
 by bylo použít knihovnu argparse, nicméně kvůli absenci implementace bonusových rozšíření je potřeba
 zpracovat právě jeden argument, --help. Díky tomuto faktu byl zvolen jednodušší způsob pomocí knihovny
